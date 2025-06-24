@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>だれコレ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 60px 0;
+      display: flex;
+      justify-content: center;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      text-align: center;
+      width: 75%; 
+      max-width: 400px;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 30px;
+      color: #333; 
+    }
+
+    .main-button {
+      display: block;
+      margin: 10px auto; 
+      padding: 18px 10px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      width: 100%; 
+      box-sizing: border-box; 
+      min-width: unset;
+    }
+
+    @media (hover: hover) {
+    .main-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .white-button:hover {
+      background-color: #f8f8f8;
+    }
+
+    .blue-button:hover {
+      background-color: #79c6c5;
+    }
+  }
+    .white-button {
+      background-color: white;
+      color: #333;
+    }
+
+    .blue-button {
+      background-color: #9ededd;
+      color: white;
+    };
+
+    @media (max-width: 768px) {
+      .main-button {
+        padding: 10px 30px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="container">
+    <h2>登録完了🎉</h2>
+    <button class="main-button blue-button" onclick="location.href='screen3.html'">続けて登録</button>
+    <button class="main-button white-button" onclick="location.href='index.html'">HOMEに戻る</button>
+  </div>
+
+  <!-- Service Workerの登録 -->
+  <script>
+      if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+              navigator.serviceWorker.register('sw.js').then(function (registration) {
+                  console.log('ServiceWorker 登録成功:', registration.scope);
+              }).catch(function (error) {
+                  console.log('ServiceWorker 登録失敗:', error);
+              });
+          });
+      }
+  </script>
+
+</body>
+</html>

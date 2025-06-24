@@ -1,0 +1,489 @@
+<!-- ローカル画像ギャラリー -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>だれコレ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        html {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        body {
+            font-family: sans-serif;
+            padding: 0px;
+            margin: 0px;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            text-align: center;
+            line-height: 70px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: height 0.3s ease, padding-top 0.3s ease;
+        }
+
+
+        .header.expanded {
+            height: 110px;
+            padding-top: 0;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 30px;
+            font-weight: bold;
+            color: #89d1cf;
+        }
+
+        /* ヘッダー上段（タイトル＋三角） */
+        .header-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .header-top h1 {
+            color: #89d1cf;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* 三角ボタン */
+        .dropdown-triangle {
+            margin-left: 8px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #89d1cf;
+            /* デフォルトで下向きの三角 (▽) */
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            /* スムーズなアニメーションのために追加 */
+        }
+
+        .dropdown-triangle.rotated {
+            transform: rotate(180deg);
+            /* 180度回転させて上向きの三角 (△) にする */
+        }
+
+        .footer {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-left,
+        .footer-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.3s;
+        }
+
+        .footer-left {
+            border-right: 1px solid #ccc;
+        }
+
+        .footer-left.active,
+        .footer-right.active {
+            background-color: #e0f7f6;
+            /* 背景色でアクティブ感を出す */
+            border-top: 3px solid #89d1cf;
+            /* 上線で強調 */
+        }
+
+        .bi-person-fill,
+        .bi-image {
+            font-size: 40px;
+            color: #89d1cf;
+        }
+
+        .content {
+            margin-top: 70px;
+            padding: 10px;
+            transition: margin-top 0.3s ease;
+        }
+
+        .content.expanded {
+            margin-top: 110px;
+        }
+
+        /* 検索バー全体 */
+        .search-bar {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        .search-bar.visible {
+            height: 30px;
+        }
+
+        .search-container {
+            width: 90%;
+            max-width: 400px;
+            margin: 2px auto;
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #89d1cf;
+            border-radius: 16px;
+            padding: 2px 8px;
+            height: 28px;
+            box-sizing: border-box;
+        }
+
+        /* 入力フィールド */
+        .search-container input[type="text"] {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 16px; /* 元は14px */
+            height: 100%;
+            line-height: 1;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* アイコン */
+        .search-icon {
+            font-size: 16px;
+            color: #89d1cf;
+            margin-left: 4px;
+        }
+
+
+        .upload-section {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: #9ededd;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+
+        @media (hover: hover) {
+            .upload-btn:hover {
+                background-color: #79c6c5;
+            }
+        }
+
+        .date-section {
+            margin-bottom: 40px;
+        }
+
+        .date-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .image-grid img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+</head>
+
+<body>
+
+    <div class="header expanded" id="header">
+        <div class="header-top">
+            <h1>だれコレ</h1>
+            <div id="dropdownToggle" class="dropdown-triangle rotated"></div>
+        </div>
+        <div id="searchBar" class="search-bar visible">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="画像をタイトルで探す">
+                <i class="bi bi-search search-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="content expanded">
+        <div id="gallery"></div>
+    </div>
+
+    <div class="content">
+        <div id="gallery"></div>
+    </div>
+
+    <div class="upload-section">
+        <input type="file" id="fileInput" hidden accept="image/*" />
+        <label for="fileInput" class="upload-btn">＋</label>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-left active">
+            <i class="bi bi-image"></i>
+        </div>
+        <div class="footer-right" onclick="location.href='people.html'">
+            <i class="bi bi-person-fill"></i>
+        </div>
+    </footer>
+
+    <script>
+        const header = document.getElementById("header");
+        const content = document.querySelector(".content");
+        const searchBar = document.getElementById("searchBar");
+        const toggleBtn = document.getElementById("dropdownToggle");
+
+        let expanded = true;
+
+        if (expanded) {
+            toggleBtn.classList.add("up");
+        }
+        toggleBtn.addEventListener("click", () => {
+            expanded = !expanded;
+
+            header.classList.toggle("expanded", expanded);
+            content.classList.toggle("expanded", expanded);
+            searchBar.classList.toggle("visible", expanded);
+            toggleBtn.classList.toggle("rotated", expanded);
+
+            // ここで三角のクラスを切り替える
+            toggleBtn.classList.toggle("up", expanded);
+        });
+
+        const dbName = "darekoreDB";
+        const storeName = "images";
+
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+
+
+        async function saveImage(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                sessionStorage.setItem("uploadedImage", reader.result); // base64画像
+                sessionStorage.setItem("originalName", file.name);
+                const fileDate = new Date(file.lastModified);
+                sessionStorage.setItem("fileLastModified", fileDate.toISOString());
+                window.location.href = "screen2.html"; // ← screen2.htmlと同じUIへ遷移
+            };
+            reader.readAsDataURL(file); // ← これが必須
+        }
+
+        function formatJapaneseDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+            return new Date(dateString).toLocaleDateString('ja-JP', options);
+        }
+
+        function groupByDate(images) {
+            return images.reduce((acc, img) => {
+                const date = new Date(img.date).toISOString().split('T')[0];
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(img);
+                return acc;
+            }, {});
+        }
+
+        async function getimageData() {
+            const db = await openDB();
+            const tx = db.transaction(storeName, "readonly");
+            const store = tx.objectStore(storeName);
+
+            return new Promise((resolve, reject) => {
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    console.log(req.result)
+                    resolve(req.result);
+
+                };
+                req.onerror = () => {
+                    reject("データ取得エラー");
+                };
+            });
+        }
+
+        async function showImages(images) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+
+            const grouped = groupByDate(images);
+            Object.keys(grouped).sort().reverse().forEach(date => {
+                const section = document.createElement('div');
+                section.className = 'date-section';
+
+                const title = document.createElement('div');
+                title.className = 'date-title';
+                title.textContent = formatJapaneseDate(date);
+                section.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'image-grid';
+
+                grouped[date].forEach(item => {
+                    const img = document.createElement("img");
+                    img.src = item.image;
+                    img.alt = item.name;
+
+                    //  画像がクリックされたら ID を保存して index7.html へ
+                    img.addEventListener("click", () => {
+                        sessionStorage.setItem("imageID", item.id);
+                        window.location.href = "screen6.html";
+                    });
+
+                    grid.appendChild(img);
+                });
+
+
+                section.appendChild(grid);
+                gallery.appendChild(section);
+            });
+
+        }
+        /*DBの一覧を見る時に使ったもの。一応残してく
+                async function showDataTable() {
+                    const db = await openDB();
+                    const tx = db.transaction(storeName, "readonly");
+                    const store = tx.objectStore(storeName);
+                    const req = store.getAll();
+        
+                    req.onsuccess = () => {
+                        const table = document.getElementById("dataTable");
+                        table.innerHTML = `
+                            <tr>
+                                <th>ID</th>
+                                <th>名前</th>
+                                <th>日付</th>
+                                <th>説明</th>
+                                <th>カテゴリ</th>
+                            </tr>
+                            `;
+                        req.result.forEach(item => {
+                            const tr = document.createElement("tr");
+                            tr.innerHTML = `
+                                    <td>${item.id ?? ''}</td>
+                                    <td>${item.name ?? ''}</td>
+                                    <td>${item.date ? new Date(item.date).toLocaleString() : ''}</td>
+                                    <td>${item.description ?? ''}</td>
+                                    <td>${item.people ?? ''}</td>
+                                `;
+                            table.appendChild(tr);
+                        });
+                    };
+                }
+        */
+
+        document.getElementById("fileInput").addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (file) saveImage(file);
+        });
+        async function init() {
+            sessionStorage.clear();
+            let images = await getimageData();
+            showImages(images);
+
+            const searchInput = document.getElementById("searchInput");
+
+
+            searchInput.addEventListener("input", () => {
+                const keyword = searchInput.value.trim();
+
+                const result = images.filter(item =>
+                    Object.values(item).some(val =>
+                        typeof val === 'string' && val.includes(keyword)
+                    )
+                );
+
+                showImages(result);
+            });
+        }
+
+        init(); // ← 実行
+
+        //showDataTable();
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+
+</body>
+
+</html>

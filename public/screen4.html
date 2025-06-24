@@ -1,0 +1,508 @@
+<!-- 人物情報の登録 -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>だれコレ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 0px;
+            margin: 0px;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            font-size: 16px; /* 元は14px */
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            touch-action: manipulation;
+            background-color: #9ededd;
+            color: white;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .error {
+            color: red;
+            display: none;
+        }
+
+        #faceImage {
+            width: auto;
+            height: 15vh;
+            margin-bottom: 10px;
+            border-radius: 16px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+
+        @media (hover: hover) {
+            .button:hover {
+                background-color: #79c6c5;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            }
+
+            .suggestion-list li:hover {
+            background-color: #f0f0f0;
+        }
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .suggestion-list {
+            margin-top: 4px;
+            padding: 0;
+            list-style: none;
+            border: 1px solid #ccc;
+            max-height: 120px;
+            overflow-y: auto;
+            background-color: white;
+            position: absolute;
+            z-index: 999;
+            width: 100%;
+            display: none;
+            font-size: 14px;
+        }
+
+        .suggestion-list li {
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>人物情報の登録</h1>
+    </div>
+
+    <div class="content">
+        <img id="faceImage" style="display: none;" />
+        <form id="personForm">
+            <div class="form-group">
+                <label for="name">名前</label>
+                <input type="text" id="name" required>
+                <ul id="nameSuggestions" class="suggestion-list"></ul>
+                <div id="nameError" class="error">名前は必須です</div>
+            </div>
+            <div class="form-group">
+                <label for="belong">所属</label>
+                <input type="text" id="belong">
+            </div>
+            <div class="form-group">
+                <label for="age">年齢</label>
+                <input type="number" id="age">
+            </div>
+            <div class="form-group">
+                <label>誕生日</label>
+                <div style="display: flex; gap: 20px;">
+                    <div class="dropdown-label">
+                        <select id="birthMonth"></select>
+                        <span>月</span>
+                    </div>
+                    <div class="dropdown-label">
+                        <select id="birthDay"></select>
+                        <span>日</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="place">出身地</label>
+                <input type="text" id="place">
+            </div>
+            <div class="form-group">
+                <label for="hobby">趣味</label>
+                <input type="text" id="hobby">
+            </div>
+            <div class="form-group">
+                <label for="other">その他</label>
+                <textarea id="other"></textarea>
+            </div>
+            <button type="submit" class="button">登録</button>
+        </form>
+    </div>
+
+    <script>
+
+
+        ///月、日のオプションを追加するコード----
+        const monthSelect = document.getElementById("birthMonth");
+        const daySelect = document.getElementById("birthDay");
+        const placeholderMonth = document.createElement("option");
+        placeholderMonth.value = "";
+        placeholderMonth.textContent = "-";
+        monthSelect.appendChild(placeholderMonth);
+
+        for (let i = 1; i <= 12; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+            monthSelect.appendChild(option);
+        }
+
+        // 日セレクト（先頭に "-" を追加）
+        const placeholderDay = document.createElement("option");
+        placeholderDay.value = "";
+        placeholderDay.textContent = "-";
+        daySelect.appendChild(placeholderDay);
+
+        for (let i = 1; i <= 31; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+            daySelect.appendChild(option);
+        }
+
+        ///----月、日のオプションを追加するコード
+        function setBirth(birthStr) {
+            const monthSelect = document.getElementById("birthMonth");
+            const daySelect = document.getElementById("birthDay");
+
+            if (!birthStr || birthStr === "----") {
+                // 未入力時
+                monthSelect.value = "";
+                daySelect.value = "";
+                return;
+            }
+
+            if (birthStr.length === 4) {
+                const month = parseInt(birthStr.slice(0, 2), 10);
+                const day = parseInt(birthStr.slice(2, 4), 10);
+
+                if (!isNaN(month) && !isNaN(day)) {
+                    monthSelect.value = month;
+                    daySelect.value = day;
+                }
+            }
+        }
+
+        function getBirthMMDD() {
+            const month = document.getElementById("birthMonth").value;
+            const day = document.getElementById("birthDay").value;
+
+            // どちらかが未選択なら "----" にする
+            if (!month || !day) return "----";
+
+            const mm = String(month).padStart(2, '0');
+            const dd = String(day).padStart(2, '0');
+
+            return mm + dd;
+        }
+
+
+        const dbName = "darekoreDB";
+        const peopleStore = "people";
+
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+
+        async function savePersonData(person, nowid) {
+            const db = await openDB();
+
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(peopleStore, "readwrite");
+                const store = tx.objectStore(peopleStore);
+
+                let req;
+
+                if (nowid === "") {
+                    // 新規追加
+                    req = store.add(person);
+                } else {
+                    // 上書き更新（person.id に nowid を含めておくこと）
+                    req = store.put(person);
+                }
+
+                req.onsuccess = () => resolve(req.result);
+                console.log("err")
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function getPeopleData() {
+            const db = await openDB();
+            const tx = db.transaction(peopleStore, "readonly");
+            const store = tx.objectStore(peopleStore);
+
+            return new Promise((resolve, reject) => {
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    console.log(req.result)
+                    resolve(req.result); // 正しく返す
+
+                };
+                req.onerror = () => {
+                    reject("データ取得エラー");
+                };
+            });
+        }
+
+        async function put_people_to_images(personID) {
+            const imageID = sessionStorage.getItem("imageID"); // 文字列 → 数値変換
+            if (!imageID) {
+                console.warn("imageID が sessionStorage に存在しません");
+                return;
+            }
+
+            const db = await openDB();
+
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction("images", "readwrite");
+                const store = tx.objectStore("images");
+                const getReq = store.get(Number(imageID));
+
+                getReq.onsuccess = () => {
+                    const image = getReq.result;
+                    if (!image) {
+                        reject(`画像ID ${imageID} が見つかりません`);
+                        return;
+                    }
+
+                    // people プロパティがなければ初期化
+                    if (!Array.isArray(image.people)) {
+                        image.people = [];
+                    }
+
+                    // personID を追加（重複防止もしたければ .includes チェックも可）
+
+                    const boxStr = sessionStorage.getItem("faceBox");
+                    const faceBox = JSON.parse(boxStr); // ← ここでオブジェクトに戻す
+
+                    let person_data = {
+                        id: personID,
+                        startx: faceBox.x,
+                        starty: faceBox.y,
+                        width: faceBox.width,
+                        height: faceBox.height
+                    };
+                    image.people.push(person_data);
+
+                    const updateReq = store.put(image);
+
+                    updateReq.onsuccess = () => {
+                        console.log(`画像 ${imageID} に人物ID ${personID} を紐づけました`);
+                        resolve();
+                    };
+
+                    updateReq.onerror = () => reject(updateReq.error);
+                };
+
+                getReq.onerror = () => reject(getReq.error);
+            });
+        }
+        let nowid = "";
+        let nowimageids = [];
+        let nowcropped = "";
+        function init() {
+            const faceImage = document.getElementById("faceImage");
+            const cropped = sessionStorage.getItem("croppedFaceImage");
+
+
+            if (cropped) {
+                faceImage.src = cropped;
+                faceImage.style.display = "block";
+            }
+
+            document.getElementById("personForm").addEventListener("submit", async function (e) {
+                e.preventDefault();
+                console.log("enter")
+                const nameInput = document.getElementById("name");
+                const nameError = document.getElementById("nameError");
+
+                if (nameInput.value.trim() === "") {
+                    nameError.style.display = "block";
+                    nameInput.focus();
+
+
+                    return;
+                } else {
+                    nameError.style.display = "none";
+                }
+
+                const imageID = Number(sessionStorage.getItem("imageID"));
+                console.log(typeof (imageID), typeof (nowimageids))
+                if (!nowimageids.includes(imageID)) {
+                    nowimageids.push(imageID);
+                }
+
+
+                const person = {
+                    id: nowid === "" ? Date.now() : nowid,
+                    name: nameInput.value.trim(),
+                    belong: document.getElementById("belong").value.trim(),
+                    age: parseInt(document.getElementById("age").value) || null,
+                    birth: getBirthMMDD(),
+                    place: document.getElementById("place").value.trim(),
+                    hobby: document.getElementById("hobby").value.trim(),
+                    other: document.getElementById("other").value.trim(),
+                    img: nowcropped === "" ? cropped : nowcropped,
+                    imageids: nowimageids
+                };
+
+                try {
+                    const personID = await savePersonData(person);
+
+                    await put_people_to_images(personID);
+
+                    window.location.href = "screen5.html";
+                } catch (err) {
+                    alert("保存に失敗しました: " + err);
+                }
+
+
+
+            });
+            name_serch();
+        }
+
+        async function name_serch() {
+            const all_peopledata = await getPeopleData();
+            const searchInput = document.getElementById("name");
+            const suggestionBox = document.getElementById("nameSuggestions");
+
+            searchInput.addEventListener("input", () => {
+                const keyword = searchInput.value.trim().toLowerCase();
+                suggestionBox.innerHTML = "";
+
+                if (!keyword) {
+                    suggestionBox.style.display = "none";
+                    return;
+                }
+
+                const matches = all_peopledata.filter(person =>
+                    person.name && person.name.toLowerCase().includes(keyword)
+                );
+
+                if (matches.length === 0) {
+                    suggestionBox.style.display = "none";
+                    return;
+                }
+
+                matches.forEach(person => {
+                    const li = document.createElement("li");
+                    li.textContent = person.name;
+                    li.style.padding = "6px 10px";
+                    li.style.cursor = "pointer";
+
+                    li.addEventListener("click", () => {
+                        searchInput.value = person.name;
+                        suggestionBox.style.display = "none";
+                        document.getElementById("belong").value = person.belong;
+                        document.getElementById("age").value = person.age;
+                        setBirth(person.birth);
+                        document.getElementById("place").value = person.place
+                        document.getElementById("hobby").value = person.hobby;
+                        document.getElementById("other").value = person.other;
+                        nowid = person.id;
+                        nowimageids = person.imageids;
+                        console.log(typeof (nowimageids), typeof (person.imageids))
+                        nowcropped = person.img;
+                    });
+
+                    suggestionBox.appendChild(li);
+                });
+
+                suggestionBox.style.display = "block";
+            });
+
+            // フォーカス外れたら候補非表示（※タッチ対応）
+            document.addEventListener("click", e => {
+                if (!searchInput.contains(e.target) && !suggestionBox.contains(e.target)) {
+                    suggestionBox.style.display = "none";
+                }
+            });
+        }
+
+        init();
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>

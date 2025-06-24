@@ -1,0 +1,500 @@
+<!-- 人物一覧 -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>だれコレ</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#89d1cf" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 0px;
+            margin: 0px;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            text-align: center;
+            line-height: 70px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: height 0.3s ease, padding-top 0.3s ease;
+            z-index: 1000;
+        }
+
+
+        .header.expanded {
+            height: 110px;
+            padding-top: 0;
+        }
+
+        /* ヘッダー上段（タイトル＋三角） */
+        .header-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .header-top h1 {
+            color: #89d1cf;
+            font-size: 24px;  /* index.htmlと同じサイズ */
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* 三角ボタン */
+        .dropdown-triangle {
+            margin-left: 8px;
+            width: 0;
+            height: 0;
+            /* 変更点: デフォルトを「▽」にするためborder-topを使用 */
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #89d1cf;
+            cursor: pointer;
+            transition: transform 0.3s ease; /* アニメーションを追加 */
+        }
+
+        /* ▽から△に変わる状態 */
+        .dropdown-triangle.rotated {
+            transform: rotate(180deg); /* 180度回転させて△にする */
+        }
+
+
+        .footer {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-left,
+        .footer-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.3s;
+        }
+
+        .footer-left {
+            border-right: 1px solid #ccc;
+        }
+
+        .footer-left.active,
+        .footer-right.active {
+            background-color: #e0f7f6;
+            /* 背景色でアクティブ感を出す */
+            border-top: 3px solid #89d1cf;
+            /* 上線で強調 */
+        }
+
+        .bi-person-fill,
+        .bi-image {
+            font-size: 40px;
+            color: #89d1cf;
+        }
+
+        .content {
+            margin-top: 70px;
+            padding: 10px;
+            transition: margin-top 0.3s ease;
+        }
+
+        .content.expanded {
+            margin-top: 110px;
+        }
+
+        /* 検索バー全体 */
+        .search-bar {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        .search-bar.visible {
+            height: 30px;
+        }
+
+        /*
+         * Modify the initial state of the search bar and header/content
+         * so they are visible by default.
+         */
+        .header.initial-expanded {
+            height: 110px;
+        }
+
+        .content.initial-expanded {
+            margin-top: 110px;
+        }
+
+        .search-bar.initial-visible {
+            height: 30px;
+        }
+
+
+        .search-container {
+            width: 90%;
+            max-width: 400px;
+            margin: 2px auto;
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #89d1cf;
+            border-radius: 16px;
+            padding: 2px 8px;
+            height: 28px;
+            box-sizing: border-box;
+        }
+
+        /* 入力フィールド */
+        .search-container input[type="text"] {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 16px; /* 元は14px */
+            height: 100%;
+            line-height: 1;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* アイコン */
+        .search-icon {
+            font-size: 16px;
+            color: #89d1cf;
+            margin-left: 4px;
+        }
+
+        .people-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .person-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            background-color: #fafafa;
+            transition: box-shadow 0.2s ease;
+            position: relative;
+            /* ★画像に対して絶対位置を取るため */
+        }
+
+
+
+        .birthday-icon {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #89d1cf;
+            background: white;
+            border-radius: 50%;
+            padding: 2px 4px;
+        }
+
+
+        .face-image {
+            width: 90px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 12pt;
+            background-color: #eee;
+            margin-bottom: 8px;
+        }
+
+        .person-info {
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+
+        @media (hover: hover) {
+            .person-card:hover {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                cursor: pointer;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+</head>
+
+<body>
+
+    <div class="header initial-expanded" id="header">
+        <div class="header-top">
+            <h1>だれコレ</h1>
+            <div id="dropdownToggle" class="dropdown-triangle rotated"></div>
+        </div>
+
+        <div id="searchBar" class="search-bar initial-visible">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="人物をキーワードで探す">
+                <i class="bi bi-search search-icon"></i>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="content initial-expanded">
+        <div id="gallery"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-left" onclick="location.href='index.html'">
+            <i class="bi bi-image"></i>
+        </div>
+        <div class="footer-right active">
+            <i class="bi bi-person-fill"></i>
+        </div>
+    </footer>
+
+    <script>
+
+        const header = document.getElementById("header");
+        const content = document.querySelector(".content");
+        const searchBar = document.getElementById("searchBar");
+        const toggleBtn = document.getElementById("dropdownToggle");
+
+        // Set initial state to expanded (search bar visible)
+        let expanded = true; // Changed to true
+
+        toggleBtn.addEventListener("click", () => {
+            expanded = !expanded;
+
+            header.classList.toggle("expanded", expanded);
+            content.classList.toggle("expanded", expanded);
+            searchBar.classList.toggle("visible", expanded);
+            toggleBtn.classList.toggle("rotated", expanded); // この行を追加
+
+            // Remove initial classes when toggled
+            header.classList.remove("initial-expanded");
+            content.classList.remove("initial-expanded");
+            searchBar.classList.remove("initial-visible");
+        });
+
+
+
+        const dbName = "GalleryDB";
+        const peopleStore = "people";
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+
+
+        async function getPeopleData() {
+            const db = await openDB();
+            const tx = db.transaction(peopleStore, "readonly");
+            const store = tx.objectStore(peopleStore);
+
+            return new Promise((resolve, reject) => {
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    console.log(req.result)
+                    resolve(req.result); // 正しく返す
+
+                };
+                req.onerror = () => {
+                    reject("データ取得エラー");
+                };
+            });
+        }
+
+        function get_today() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0'); // 月は0〜11なので+1
+            const day = String(now.getDate()).padStart(2, '0');
+
+            return month + day; // → "0616"
+        }
+
+
+        function displayGallery(people) {
+            let today = get_today();
+
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+
+            const grid = document.createElement('div');
+            grid.className = 'people-grid';
+
+            people.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'person-card';
+
+                card.addEventListener('click', () => {
+                    sessionStorage.setItem("editPersonId", person.id);
+                    window.location.href = "person.html";
+                });
+
+                // 顔写真
+                const img = document.createElement('img');
+                img.src = person.img || "no-face.png"; // 顔写真がない場合のデフォルト画像
+                img.alt = person.name;
+                img.className = "face-image";
+                console.log(today, person.birth)
+                if (today == person.birth) {
+                    console.log("enter")
+                    //card.style.border = "2px solid #89d1cf";
+                    // 🎉 パーティーハットSVGを画像として追加
+                    card.style.backgroundImage = 'url("chat.png")';
+                    card.style.backgroundSize = 'cover';
+                    card.style.backgroundPosition = 'center';
+                    const hat = document.createElement('img');
+                    hat.src = "download.svg"; // アップロード済みのSVG
+                    hat.alt = "party hat";
+                    hat.style.position = "absolute";
+                    hat.style.top = "0";
+                    hat.style.left = "50%";
+                    hat.style.transform = "translate(-50%, -50%)";
+                    hat.style.width = "40px";
+                    hat.style.color = "#89d1cf";
+                    card.appendChild(hat);
+                }
+
+
+                // 情報表示部分
+                const info = document.createElement('div');
+                info.className = 'person-info';
+
+                info.innerHTML = `<strong>${person.name}</strong>`;
+
+                card.appendChild(img);
+                card.appendChild(info);
+                grid.appendChild(card);
+            });
+
+            gallery.appendChild(grid);
+        }
+
+        function popup_birthday(people) {
+            const today = get_today();
+
+            const key = `popup_shown_${today}`;
+            let birthday_people = [];
+            people.forEach(person => {
+                if (person.birth == today) {
+                    birthday_people.push(person)
+                }
+            })
+
+
+            if (birthday_people.length > 0 && !localStorage.getItem(key)) {
+                let message = "🎉本日誕生日 : ";
+                birthday_people.forEach(birthday_person => {
+                    message = message + `${birthday_person.name}さん `;
+                })
+                alert(message);
+                localStorage.setItem(key, 'true'); // この日付では再表示しないよう記録
+                age_plus(birthday_people);
+
+            }
+
+        }
+        async function age_plus(people) {
+            const db = await openDB();
+            const tx = db.transaction(peopleStore, "readwrite");
+            const store = tx.objectStore(peopleStore);
+
+            for (const person of people) {
+                person.age = (person.age !== null) ? person.age + 1 : null;
+                await store.put(person); // Changed to put (for update)
+            }
+
+            await tx.done; // ← トランザクションが完了するのを待つ
+        }
+
+        async function init() {
+
+            const all_peopledata = await getPeopleData();
+
+            displayGallery(all_peopledata);
+            popup_birthday(all_peopledata);
+            const searchInput = document.getElementById("searchInput");
+            searchInput.addEventListener("input", () => {
+                const keyword = searchInput.value.trim();
+
+                const result = all_peopledata.filter(item =>
+                    Object.values(item).some(val =>
+                        typeof val === 'string' && val.includes(keyword)
+                    )
+                );
+
+                displayGallery(result);
+            });
+        }
+
+        init(); // ← 実行
+
+
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,963 @@
+<!-- 顔を選択（モバイル対応・タッチ操作）-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>だれコレ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+  <style>
+/* Existing CSS */
+body {
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  background-color: #f5f5f5;
+  touch-action: manipulation;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.header {
+  background-color: white;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+.content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.image-container {
+  position: relative;
+  display: inline-block;
+  touch-action: none; /* pan-yからnoneに変更 */
+  max-width: 90vw;
+  max-height: 50vh;
+  overflow: hidden; /* visibleからhiddenに変更 */
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.face-box {
+  position: absolute;
+  border: 1px solid rgba(5,176,176, 0.5);
+  cursor: move;
+  box-sizing: border-box;
+  touch-action: none;
+  user-select: none;
+  overflow: visible;
+}
+.face-box.selected {
+  background-color: rgba(0, 255, 238, 0.319);
+  border: 10px solid #00b2b2;
+  border: none;
+}
+.face-box::before,
+.face-box::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color:#00b2b2;
+  border-style: solid;
+  border-width: 0;
+}
+.face-box::before {
+  top: -3px;
+  right: -3px;
+  border-top-width: 3px;
+  border-right-width: 3px;
+}
+.face-box::after {
+  bottom: -3px;
+  left: -3px;
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+}
+.face-box.selected::before,
+.face-box.selected::after {
+  border-color:#00b2b2;
+}
+.face-box .resize-handle {
+  display: none;
+}
+.resize-handle.nw {
+  top: -12px;
+  left: -12px;
+}
+.resize-handle.ne {
+  top: -12px;
+  right: -12px;
+}
+.resize-handle.sw {
+  bottom: -12px;
+  left: -12px;
+}
+.resize-handle.se {
+  bottom: -12px;
+  right: -12px;
+}
+.button-container {
+  width: 75%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+.main-button {
+  padding: 18px 10px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+@media (hover: hover) {
+  .register-undetected:hover {
+    background-color: #f8f8f8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .register-selected:hover {
+    background-color: #79c6c5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsla(193, 39%, 49%, 0.4);
+  }
+}
+
+.register-undetected {
+  background-color: white;
+  color: #333;
+  border: 2px solid #ddd;
+}
+.register-selected {
+  background-color: #9ededd;
+  color: white;
+}
+.add-frame-button {
+  background-color: #ffffff;
+  color: black;
+  margin-bottom: 20px;
+}
+
+#photo {
+  max-width: none; /* 100%からnoneに変更 */
+  max-height: none; /* 50vhからnoneに変更 */
+  width: auto;
+  height: auto;
+  border-radius: 16px;
+  touch-action: none; /* pan-yからnoneに変更 */
+  user-select: none;
+  object-fit: contain;
+  transform-origin: 0 0; /* 追加 */
+  transition: none; /* 追加 */
+}
+.status-message {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.status-loading {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+.status-error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+.status-success {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 22px;
+  }
+  .content {
+    padding: 15px;
+  }
+  .image-container {
+    max-height: 45vh;
+    margin-bottom: 25px;
+  }
+  #photo {
+    max-height: 45vh;
+  }
+  .main-button {
+    padding: 10px 30px;
+    font-size: 16px;
+  }
+  .face-box .resize-handle {
+    width: 25px;
+    height: 25px;
+  }
+  .resize-handle.nw, .resize-handle.ne {
+    top: -15px;
+  }
+  .resize-handle.sw, .resize-handle.se {
+    bottom: -15px;
+  }
+  .resize-handle.nw, .resize-handle.sw {
+    left: -15px;
+  }
+  .resize-handle.ne, .resize-handle.se {
+    right: -15px;
+  }
+}
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>登録する人物を選ぶ</h1>
+  </div>
+  
+  <div class="content">
+    <div id="status-message" class="status-message status-loading">
+      顔検出を初期化中...
+    </div>
+    <div class="image-container">
+      <img id="photo" alt="写真" />
+    </div>
+    <div class="button-container">
+      <button class="main-button add-frame-button" onclick="addNewFrame()">検出されていない人物を登録</button>
+      <button class="main-button register-selected" onclick="submitSelection()">選択した人物の情報を登録</button>
+    </div>
+  </div>
+
+  <script>
+    const dbName = "darekoreDB";
+    const storeName = "images";
+
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open("darekoreDB", 10);
+
+            request.onupgradeneeded = e => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("images")) {
+                    db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                }
+                if (!db.objectStoreNames.contains("people")) {
+                    db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                }
+            };
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject("DB open error");
+            request.onblocked = () => {
+                alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+            };
+        });
+    }
+
+    let faceDetector = null;
+    let selectedBox = null;
+    let touchState = {
+      isDragging: false,
+      isResizing: false,
+      isPinching: false,
+      activeBox: null,
+      startTouch: null,
+      startBox: null,
+      initialDistance: 0,
+      initialSize: { width: 0, height: 0 },
+      initialCenter: { x: 0, y: 0 },
+      // 写真のズーム・パン状態を追加
+      photoScale: 1,
+      photoTranslateX: 0,
+      photoTranslateY: 0,
+      isPhotoOperation: false,
+      photoInitialScale: 1,
+      photoInitialTranslate: { x: 0, y: 0 },
+      photoInitialDistance: 0,
+      photoInitialCenter: { x: 0, y: 0 }
+    };
+
+    // 写真のトランスフォームを適用する関数を追加
+    function updatePhotoTransform() {
+      const photo = document.getElementById('photo');
+      photo.style.transform = `scale(${touchState.photoScale}) translate(${touchState.photoTranslateX}px, ${touchState.photoTranslateY}px)`;
+    }
+
+    // 枠の位置を写真のスケールに合わせて更新する関数を修正
+    function updateBoxesForPhotoTransform() {
+      const boxes = document.querySelectorAll('.face-box');
+      boxes.forEach(box => {
+        // 枠の実際の座標（写真のスケール変更を考慮しない）を取得
+        const actualLeft = parseFloat(box.dataset.actualLeft || box.style.left);
+        const actualTop = parseFloat(box.dataset.actualTop || box.style.top);
+        const actualWidth = parseFloat(box.dataset.actualWidth || box.style.width);
+        const actualHeight = parseFloat(box.dataset.actualHeight || box.style.height);
+
+        // 初回の場合、実際の座標を保存
+        if (!box.dataset.actualLeft) {
+          box.dataset.actualLeft = parseFloat(box.style.left);
+          box.dataset.actualTop = parseFloat(box.style.top);
+          box.dataset.actualWidth = parseFloat(box.style.width);
+          box.dataset.actualHeight = parseFloat(box.style.height);
+        }
+
+        // 写真のスケールと移動に合わせて枠の表示位置を調整
+        const displayLeft = actualLeft * touchState.photoScale + touchState.photoTranslateX * touchState.photoScale;
+        const displayTop = actualTop * touchState.photoScale + touchState.photoTranslateY * touchState.photoScale;
+        const displayWidth = actualWidth * touchState.photoScale;
+        const displayHeight = actualHeight * touchState.photoScale;
+
+        box.style.left = `${displayLeft}px`;
+        box.style.top = `${displayTop}px`;
+        box.style.width = `${displayWidth}px`;
+        box.style.height = `${displayHeight}px`;
+      });
+    }
+
+    // 枠の実際の座標を更新する関数を追加
+    function updateBoxActualPosition(box) {
+      // 現在の表示座標から実際の座標を逆算
+      const displayLeft = parseFloat(box.style.left);
+      const displayTop = parseFloat(box.style.top);
+      const displayWidth = parseFloat(box.style.width);
+      const displayHeight = parseFloat(box.style.height);
+
+      const actualLeft = (displayLeft - touchState.photoTranslateX * touchState.photoScale) / touchState.photoScale;
+      const actualTop = (displayTop - touchState.photoTranslateY * touchState.photoScale) / touchState.photoScale;
+      const actualWidth = displayWidth / touchState.photoScale;
+      const actualHeight = displayHeight / touchState.photoScale;
+
+      box.dataset.actualLeft = actualLeft;
+      box.dataset.actualTop = actualTop;
+      box.dataset.actualWidth = actualWidth;
+      box.dataset.actualHeight = actualHeight;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const photo = document.getElementById('photo');
+      const container = document.querySelector('.image-container');
+      const statusMessage = document.getElementById('status-message');
+
+      // セッションストレージからデータを取得
+      const imageData = sessionStorage.getItem("uploadedImage");
+      const editedDate = sessionStorage.getItem("editedDate");
+      const eventName = sessionStorage.getItem("eventName");
+
+      // DOMContentLoaded内で写真とコンテナにイベントリスナーを追加
+      photo.addEventListener('touchstart', handlePhotoTouchStart, { passive: false });
+      photo.addEventListener('touchmove', handlePhotoTouchMove, { passive: false });
+      photo.addEventListener('touchend', handlePhotoTouchEnd, { passive: false });
+
+      container.addEventListener('touchstart', handlePhotoTouchStart, { passive: false });
+      container.addEventListener('touchmove', handlePhotoTouchMove, { passive: false });
+      container.addEventListener('touchend', handlePhotoTouchEnd, { passive: false });
+
+      function handlePhotoTouchStart(e) {
+        // 枠の内部をタッチした場合は写真操作を行わない
+        if (e.target.closest('.face-box')) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const touches = e.touches;
+
+        if (touches.length === 1) {
+          // 1本指でのパン開始
+          touchState.isPhotoOperation = true;
+          touchState.photoInitialTranslate = {
+            x: touchState.photoTranslateX,
+            y: touchState.photoTranslateY
+          };
+          touchState.startTouch = {
+            x: touches[0].clientX,
+            y: touches[0].clientY
+          };
+        } else if (touches.length === 2) {
+          // 2本指でのピンチズーム開始
+          touchState.isPhotoOperation = true;
+          const touch1 = touches[0];
+          const touch2 = touches[1];
+
+          touchState.photoInitialDistance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+          );
+
+          touchState.photoInitialScale = touchState.photoScale;
+          touchState.photoInitialTranslate = {
+            x: touchState.photoTranslateX,
+            y: touchState.photoTranslateY
+          };
+
+          const containerRect = container.getBoundingClientRect();
+          touchState.photoInitialCenter = {
+            x: (touch1.clientX + touch2.clientX) / 2 - containerRect.left,
+            y: (touch1.clientY + touch2.clientY) / 2 - containerRect.top
+          };
+        }
+      }
+
+      function handlePhotoTouchMove(e) {
+        if (!touchState.isPhotoOperation) return;
+
+        e.preventDefault();
+
+        const touches = e.touches;
+
+        if (touches.length === 1 && touchState.startTouch) {
+          // 1本指でのパン
+          const deltaX = (touches[0].clientX - touchState.startTouch.x) / touchState.photoScale;
+          const deltaY = (touches[0].clientY - touchState.startTouch.y) / touchState.photoScale;
+
+          touchState.photoTranslateX = touchState.photoInitialTranslate.x + deltaX;
+          touchState.photoTranslateY = touchState.photoInitialTranslate.y + deltaY;
+
+          updatePhotoTransform();
+          updateBoxesForPhotoTransform();
+
+        } else if (touches.length === 2) {
+          // 2本指でのピンチズーム
+          const touch1 = touches[0];
+          const touch2 = touches[1];
+
+          const currentDistance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+          );
+
+          const scale = currentDistance / touchState.photoInitialDistance;
+          touchState.photoScale = Math.max(0.5, Math.min(3, touchState.photoInitialScale * scale));
+
+          // ピンチの中心点を基準にスケール調整
+          const containerRect = container.getBoundingClientRect();
+          const currentCenter = {
+            x: (touch1.clientX + touch2.clientX) / 2 - containerRect.left,
+            y: (touch1.clientY + touch2.clientY) / 2 - containerRect.top
+          };
+
+          const centerDeltaX = currentCenter.x - touchState.photoInitialCenter.x;
+          const centerDeltaY = currentCenter.y - touchState.photoInitialCenter.y;
+
+          touchState.photoTranslateX = touchState.photoInitialTranslate.x + centerDeltaX / touchState.photoScale;
+          touchState.photoTranslateY = touchState.photoInitialTranslate.y + centerDeltaY / touchState.photoScale;
+
+          updatePhotoTransform();
+          updateBoxesForPhotoTransform();
+        }
+      }
+
+      function handlePhotoTouchEnd(e) {
+        if (e.touches.length === 0) {
+          touchState.isPhotoOperation = false;
+          touchState.startTouch = null;
+        }
+      }
+
+      photo.src = await getImageByID();
+
+      async function getImageByID() {
+          const imageID = sessionStorage.getItem("imageID");
+
+          if (!imageID) {
+              console.warn("imageID が sessionStorage に存在しません");
+              return;
+          }
+
+          const db = await openDB();
+
+          return new Promise((resolve, reject) => {
+              const tx = db.transaction("images", "readonly");
+              const store = tx.objectStore("images");
+              const getReq = store.get(Number(imageID));
+
+              getReq.onsuccess = () => {
+                  const image = getReq.result.image;
+                  if (!image) {
+                      reject(`画像ID ${imageID} が見つかりません`);
+                  } else {
+                      resolve(image);
+                  }
+              };
+
+              getReq.onerror = () => reject(getReq.error);
+          });
+      }
+
+      /*
+      if (imageData) {
+        photo.src = imageData;
+      }
+      */
+
+      // 新しいMediaPipe Face Detectorを初期化
+      try {
+        statusMessage.textContent = '顔検出ライブラリを読み込み中...';
+        statusMessage.className = 'status-message status-loading';
+
+        const { FaceDetector, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0');
+
+        const vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm'
+        );
+
+        faceDetector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+            delegate: "GPU"
+          },
+          runningMode: "IMAGE",
+          minDetectionConfidence: 0.5
+        });
+
+        statusMessage.textContent = '顔検出の準備が完了しました。';
+        statusMessage.className = 'status-message status-success';
+
+        // 3秒後にステータスメッセージを非表示
+        setTimeout(() => {
+          statusMessage.style.display = 'none';
+        }, 3000);
+
+      } catch (error) {
+        console.error('MediaPipe初期化エラー:', error);
+        statusMessage.textContent = '顔検出の初期化に失敗しました。手動で枠を追加してください。';
+        statusMessage.className = 'status-message status-error';
+      }
+
+      // 顔検出の実行
+      async function detectFaces() {
+        if (!faceDetector || !photo.complete || photo.naturalWidth === 0) {
+          return;
+        }
+
+        try {
+          // 既存の枠を削除
+          document.querySelectorAll('.face-box').forEach(b => b.remove());
+
+          const detections = await faceDetector.detect(photo);
+
+          if (detections.detections && detections.detections.length > 0) {
+            statusMessage.textContent = `${detections.detections.length}個の顔を検出しました。`;
+            statusMessage.className = 'status-message status-success';
+            statusMessage.style.display = 'block';
+
+            setTimeout(() => {
+              statusMessage.style.display = 'none';
+            }, 3000);
+
+            detections.detections.forEach(detection => {
+              const bbox = detection.boundingBox;
+              if (!bbox) return;
+
+              // 座標を画像の実際のサイズに変換
+              const x = bbox.originX;
+              const y = bbox.originY;
+              const width = bbox.width;
+              const height = bbox.height;
+
+              const box = createTouchableBox(x, y, width, height);
+              container.appendChild(box);
+            });
+          } else {
+            statusMessage.textContent = '顔が検出されませんでした。手動で枠を追加してください。';
+            statusMessage.className = 'status-message status-error';
+            statusMessage.style.display = 'block';
+
+            setTimeout(() => {
+              statusMessage.style.display = 'none';
+            }, 5000);
+          }
+        } catch (error) {
+          console.error('顔検出エラー:', error);
+          statusMessage.textContent = '顔検出でエラーが発生しました。手動で枠を追加してください。';
+          statusMessage.className = 'status-message status-error';
+          statusMessage.style.display = 'block';
+        }
+      }
+
+      // タッチ対応の箱を生成（修正版）
+      function createTouchableBox(x, y, width, height) {
+        const box = document.createElement('div');
+        box.className = 'face-box';
+
+        // 画像の表示サイズに合わせて座標を調整
+        const scaleX = photo.clientWidth / photo.naturalWidth;
+        const scaleY = photo.clientHeight / photo.naturalHeight;
+
+        const adjustedLeft = x * scaleX;
+        const adjustedTop = y * scaleY;
+        const adjustedWidth = width * scaleX;
+        const adjustedHeight = height * scaleY;
+
+        box.style.left = `${adjustedLeft}px`;
+        box.style.top = `${adjustedTop}px`;
+        box.style.width = `${adjustedWidth}px`;
+        box.style.height = `${adjustedHeight}px`;
+
+        // 実際の座標を保存（写真のスケールに影響されない座標）
+        box.dataset.actualLeft = adjustedLeft;
+        box.dataset.actualTop = adjustedTop;
+        box.dataset.actualWidth = adjustedWidth;
+        box.dataset.actualHeight = adjustedHeight;
+
+        makeTouchable(box);
+
+        // タッチで選択（枠内のタッチは枠操作として処理）
+        box.addEventListener('touchstart', (e) => {
+          e.stopPropagation();
+          selectBox(box);
+        });
+
+        // クリックでも選択（PC対応）
+        box.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectBox(box);
+        });
+
+        return box;
+      }
+
+      function selectBox(box) {
+        document.querySelectorAll('.face-box').forEach(b => b.classList.remove('selected'));
+        box.classList.add('selected');
+        selectedBox = box;
+      }
+
+      // タッチ操作を追加（修正版）
+      function makeTouchable(box) {
+        // 角ハンドル作成（非表示だがリサイズ機能のために必要）
+        ['nw', 'ne', 'sw', 'se'].forEach(dir => {
+          const handle = document.createElement('div');
+          handle.className = `resize-handle ${dir}`;
+          box.appendChild(handle);
+        });
+
+        // タッチイベント
+        box.addEventListener('touchstart', handleTouchStart, { passive: false });
+        box.addEventListener('touchmove', handleTouchMove, { passive: false });
+        box.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        // マウス操作（PC対応）
+        box.addEventListener('mousedown', handleMouseDown);
+      }
+
+      function handleTouchStart(e) {
+        // 枠をタッチした場合は写真操作を無効化
+        e.preventDefault();
+        e.stopPropagation();
+
+        const box = e.currentTarget;
+        selectBox(box);
+
+        const touches = e.touches;
+
+        if (touches.length === 1) {
+          touchState.isDragging = true;
+          touchState.activeBox = box;
+          touchState.startTouch = {
+            x: touches[0].clientX,
+            y: touches[0].clientY
+          };
+          touchState.startBox = {
+            left: box.offsetLeft,
+            top: box.offsetTop
+          };
+        } else if (touches.length === 2) {
+          touchState.isPinching = true;
+          touchState.isDragging = false;
+          touchState.activeBox = box;
+
+          const touch1 = touches[0];
+          const touch2 = touches[1];
+
+          touchState.initialDistance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+          );
+
+          touchState.initialTouches = {
+            touch1: { x: touch1.clientX, y: touch1.clientY },
+            touch2: { x: touch2.clientX, y: touch2.clientY }
+          };
+
+          touchState.initialSize = {
+            width: box.offsetWidth,
+            height: box.offsetHeight
+          };
+
+          touchState.initialCenter = {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+          };
+        }
+      }
+
+      function handleTouchMove(e) {
+        if (touchState.activeBox) {
+          e.preventDefault();
+          e.stopPropagation(); // 写真操作を防ぐ
+        }
+
+        if (!touchState.activeBox) return;
+
+        const touches = e.touches;
+        const box = touchState.activeBox;
+
+        if (touches.length === 1 && touchState.isDragging) {
+          const touch = touches[0];
+          const deltaX = touch.clientX - touchState.startTouch.x;
+          const deltaY = touch.clientY - touchState.startTouch.y;
+
+          const newLeft = touchState.startBox.left + deltaX;
+          const newTop = touchState.startBox.top + deltaY;
+
+          box.style.left = `${Math.max(0, newLeft)}px`;
+          box.style.top = `${Math.max(0, newTop)}px`;
+
+        } else if (touches.length === 2 && touchState.isPinching) {
+          const touch1 = touches[0];
+          const touch2 = touches[1];
+
+          const currentDeltaX = Math.abs(touch2.clientX - touch1.clientX);
+          const currentDeltaY = Math.abs(touch2.clientY - touch1.clientY);
+
+          const initialDeltaX = Math.abs(touchState.initialTouches.touch2.x - touchState.initialTouches.touch1.x);
+          const initialDeltaY = Math.abs(touchState.initialTouches.touch2.y - touchState.initialTouches.touch1.y);
+
+          const scaleX = initialDeltaX > 0 ? currentDeltaX / initialDeltaX : 1;
+          const scaleY = initialDeltaY > 0 ? currentDeltaY / initialDeltaY : 1;
+
+          const minSize = 30;
+
+          const newWidth = Math.max(minSize, touchState.initialSize.width * scaleX);
+          const newHeight = Math.max(minSize, touchState.initialSize.height * scaleY);
+
+          const currentCenter = {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+          };
+
+          const containerRect = container.getBoundingClientRect();
+          const relativeCenter = {
+            x: currentCenter.x - containerRect.left,
+            y: currentCenter.y - containerRect.top
+          };
+
+          const newLeft = relativeCenter.x - newWidth / 2;
+          const newTop = relativeCenter.y - newHeight / 2;
+
+          box.style.width = `${newWidth}px`;
+          box.style.height = `${newHeight}px`;
+          box.style.left = `${Math.max(0, newLeft)}px`;
+          box.style.top = `${Math.max(0, newTop)}px`;
+        }
+      }
+
+      function handleTouchEnd(e) {
+        if (touchState.activeBox) {
+          e.preventDefault();
+          e.stopPropagation(); // 写真操作を防ぐ
+
+          // 枠の移動/リサイズが終了した時点で実際の座標を更新
+          updateBoxActualPosition(touchState.activeBox);
+        }
+
+        touchState.isDragging = false;
+        touchState.isPinching = false;
+        touchState.activeBox = null;
+        touchState.startTouch = null;
+        touchState.startBox = null;
+      }
+
+      // PC用マウス操作（修正版）
+      function handleMouseDown(e) {
+        const box = e.currentTarget;
+        selectBox(box);
+
+        if (e.target.classList.contains('resize-handle')) {
+          const direction = e.target.classList[1];
+          let isResizing = true;
+
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startWidth = box.offsetWidth;
+          const startHeight = box.offsetHeight;
+          const startLeft = box.offsetLeft;
+          const startTop = box.offsetTop;
+
+          function onMouseMove(e) {
+            if (!isResizing) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            const minSize = 30;
+
+            let newWidth = startWidth;
+            let newHeight = startHeight;
+            let newLeft = startLeft;
+            let newTop = startTop;
+
+            if (direction.includes('e')) {
+              newWidth = Math.max(minSize, startWidth + deltaX);
+            }
+            if (direction.includes('s')) {
+              newHeight = Math.max(minSize, startHeight + deltaY);
+            }
+            if (direction.includes('w')) {
+              newWidth = Math.max(minSize, startWidth - deltaX);
+              newLeft = startLeft + deltaX;
+              if (newLeft < 0) {
+                newWidth += newLeft;
+                newLeft = 0;
+              }
+            }
+            if (direction.includes('n')) {
+              newHeight = Math.max(minSize, startHeight - deltaY);
+              newTop = startTop + deltaY;
+              if (newTop < 0) {
+                newHeight += newTop;
+                newTop = 0;
+              }
+            }
+
+            box.style.width = `${newWidth}px`;
+            box.style.height = `${newHeight}px`;
+            box.style.left = `${newLeft}px`;
+            box.style.top = `${newTop}px`;
+          }
+
+          function onMouseUp() {
+            isResizing = false;
+            updateBoxActualPosition(box); // マウス操作終了時も実際の座標を更新
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          }
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+
+        } else {
+          let isDragging = true;
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startLeft = box.offsetLeft;
+          const startTop = box.offsetTop;
+
+          function onMouseMove(e) {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            box.style.left = `${Math.max(0, startLeft + deltaX)}px`;
+            box.style.top = `${Math.max(0, startTop + deltaY)}px`;
+          }
+
+          function onMouseUp() {
+            isDragging = false;
+            updateBoxActualPosition(box); // マウス操作終了時も実際の座標を更新
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          }
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        }
+      }
+
+      // 画像読み込み完了後に顔検出
+      photo.onload = () => {
+        if (photo.naturalWidth > 0) {
+          detectFaces();
+        }
+      };
+
+      // 既に読み込み済みの場合
+      if (photo.complete && photo.naturalWidth > 0) {
+        detectFaces();
+      }
+
+      // 枠追加関数（修正版）
+      window.addNewFrame = function () {
+        const box = createTouchableBox(50, 50, 100, 100);
+        container.appendChild(box);
+        selectBox(box);
+      };
+
+      // 送信処理（修正版）
+      window.submitSelection = function () {
+        if (!selectedBox) {
+          alert('枠を1つ選んでください。');
+          return;
+        }
+
+        // 実際の座標を使用して切り抜き処理を行う
+        const actualLeft = parseFloat(selectedBox.dataset.actualLeft);
+        const actualTop = parseFloat(selectedBox.dataset.actualTop);
+        const actualWidth = parseFloat(selectedBox.dataset.actualWidth);
+        const actualHeight = parseFloat(selectedBox.dataset.actualHeight);
+
+        const scaleX = photo.naturalWidth / photo.clientWidth;
+        const scaleY = photo.naturalHeight / photo.clientHeight;
+
+        let x = Math.round(actualLeft * scaleX);
+        let y = Math.round(actualTop * scaleY);
+        let width = Math.round(actualWidth * scaleX);
+        let height = Math.round(actualHeight * scaleY);
+
+        // 境界チェック
+        x = Math.max(0, Math.min(x, photo.naturalWidth - width));
+        y = Math.max(0, Math.min(y, photo.naturalHeight - height));
+        width = Math.max(1, Math.min(width, photo.naturalWidth - x));
+        height = Math.max(1, Math.min(height, photo.naturalHeight - y));
+
+        console.log('切り抜き座標:', { x, y, width, height });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const tempImg = new Image();
+        tempImg.onload = () => {
+          ctx.drawImage(tempImg, x, y, width, height, 0, 0, width, height);
+          const croppedDataURL = canvas.toDataURL("image/jpeg", 0.9);
+          sessionStorage.setItem("croppedFaceImage", croppedDataURL);
+          sessionStorage.setItem("faceBox", JSON.stringify({ x, y, width, height }));
+          window.location.href = "screen4.html";
+        };
+
+        tempImg.src = photo.src;
+      };
+    });
+  </script>
+
+  <!-- Service Workerの登録 -->
+  <script>
+      if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+              navigator.serviceWorker.register('sw.js').then(function (registration) {
+                  console.log('ServiceWorker 登録成功:', registration.scope);
+              }).catch(function (error) {
+                  console.log('ServiceWorker 登録失敗:', error);
+              });
+          });
+      }
+  </script>
+</body>
+</html>

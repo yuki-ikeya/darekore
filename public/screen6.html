@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>だれコレ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 30px;
+            background-color: #f5f5f5;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            max-height: 70vh;
+        }
+
+        .image-container img {
+            display: block;
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+        }
+
+        .face-box {
+            z-index: 3;
+            position: absolute;
+            border: 3px solid #9ededd;
+            cursor: pointer;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .face-box.selected {
+            border-color: #ff6164;
+        }
+
+        .info-popup {
+            position: absolute;
+            background-color: white;
+            border: 2px solid #79c6c5;
+            /* 枠線の色 */
+            border-radius: 8px;
+            padding: 12px;
+            text-align: left;
+            display: none;
+            z-index: 10;
+            min-width: 180px;
+            max-width: 250px;
+            box-shadow: 0 4px 12px rgba(158, 222, 221, 0.3);
+            font-size: 14px;
+            color: #333;
+            /* ポップアップ全体の基本文字色 */
+        }
+
+        .info-popup .person-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #333;
+            /* 人物名の文字色 */
+        }
+
+        .info-popup .person-details {
+            color: #666;
+            /* 詳細情報の文字色 */
+            line-height: 1.4;
+        }
+
+        .info-popup .expand-icon {
+            float: right;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            user-select: none;
+            margin-left: 10px;
+        }
+
+        .expanded-info {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+            display: none;
+        }
+
+        .edit-icon {
+            cursor: pointer;
+            font-size: 16px;
+            color: #9ededd;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .toggle-container {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #9ededd;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .buttons {
+            display: block;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 50px auto auto auto;
+            width: 75%;
+            max-width: 400px;
+        }
+
+        .main-button {
+            display: block;
+            /* 追加 */
+            margin: 10px auto;
+            padding: 18px 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            /* 角を丸く */
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            min-width: unset;
+            box-sizing: border-box;
+        }
+
+        .main-button.primary {
+            background-color: #ffffff;
+            color: black;
+        }
+
+        .main-button.delete {
+            background-color: #ff6164;
+            color: white;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header-container h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .header-edit-icon {
+            cursor: pointer;
+            font-size: 20px;
+            color: #9ededd;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-button {
+                padding: 10px 30px;
+                /* スマートフォンでのパディング */
+                font-size: 16px;
+                /* スマートフォンでのフォントサイズ */
+            }
+        }
+
+        @media (hover: hover) {
+            .face-box:hover {
+                border-color: #79c6c5;
+                box-shadow: 0 2px 8px rgba(158, 222, 221, 0.3);
+            }
+
+            .face-box.selected:hover {
+                border-color: #ff3d42;
+                box-shadow: 0 2px 8px rgba(255, 97, 100, 0.3);
+            }
+
+            .info-popup .expand-icon:hover {
+                color: #333;
+            }
+
+            .edit-icon:hover {
+                color: #79c6c5;
+                background-color: rgba(158, 222, 221, 0.1);
+            }
+
+            .main-button.primary:hover {
+                background-color: #79c6c5;
+            }
+
+            .main-button.delete:hover {
+                background-color: #ff3d42;
+            }
+
+            .header-edit-icon:hover {
+                color: #79c6c5;
+                background-color: rgba(158, 222, 221, 0.1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <h2 id="imageName">ヘッダー</h2>
+        <i class="bi bi-pencil-fill header-edit-icon" id="edit-imageName"></i>
+    </div>
+
+    <div class="toggle-container">
+        <span class="toggle-label">枠の表示</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggleFrames" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="image-container" id="photoArea">
+        <img id="mainImage" src="" alt="集合写真">
+        <div id="overlay" style="position: absolute; top: 0; left: 0;"></div>
+    </div>
+
+    <div id="infoPopup" class="info-popup"></div>
+
+    <div class="buttons">
+        <button class="main-button primary" onclick="window.location.href='screen3.html'">登録されていない人物を追加</button>
+        <button class="main-button delete" id="delete_Button">写真を削除</button>
+        <button class="main-button primary" onclick="window.location.href='index.html'">HOMEに戻る</button>
+    </div>
+
+    <script>
+        const dbName = "darekoreDB";
+        const peopleStore = "people";
+        let currentBoxes = [];
+        let selectedPersonId = null;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+
+        async function get_images(id) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const txImg = db.transaction("images", "readonly");
+                const imageStore = txImg.objectStore("images");
+                const req = imageStore.get(id);
+
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject("データ取得エラー");
+            });
+        }
+        async function editimagename(image) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const txImg = db.transaction("images", "readwrite");
+                const imageStore = txImg.objectStore("images");
+                const req = imageStore.put(image);
+
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject("データ取得エラー");
+            });
+
+        }
+
+        async function loadData() {
+            const imageIdStr = sessionStorage.getItem("imageID");
+            if (!imageIdStr) {
+                alert("画像IDが見つかりません");
+                return;
+            }
+
+            const imageId = Number(imageIdStr);
+            const image = await get_images(imageId)
+            if (!image) {
+                alert("画像データが見つかりません");
+                return;
+            }
+
+            const mainImage = document.getElementById("mainImage");
+            mainImage.src = image.image;
+            addEvent_editBtn(image);
+
+            const header = document.querySelector('h2');
+            if (image.name) {
+                header.textContent = image.name;
+            } else {
+                header.textContent = "画像名なし"; // 画像名がない場合のデフォルトテキスト
+            }
+
+            mainImage.onload = () => {
+                const overlay = document.getElementById("overlay");
+                overlay.style.width = mainImage.offsetWidth + "px";
+                overlay.style.height = mainImage.offsetHeight + "px";
+
+                loadPeopleData(image);
+            };
+
+        }
+
+        async function loadPeopleData(image) {
+            const db = await openDB();
+            const txPeople = db.transaction("people", "readonly");
+            const peopleStore = txPeople.objectStore("people");
+            const allPeopleReq = peopleStore.getAll();
+
+            allPeopleReq.onsuccess = () => {
+                const allPeople = allPeopleReq.result;
+                console.log(allPeople);
+
+                const overlay = document.getElementById("overlay");
+                overlay.innerHTML = "";
+                currentBoxes = [];
+
+                allPeople.forEach(person_data => {
+                    if (image.people) {
+                        image.people.forEach(person => {
+                            if (person_data.id == person.id) {
+                                renderPeopleBoxes(person, person_data);
+                            }
+                        });
+                    }
+                });
+
+                document.getElementById("photoArea").addEventListener("click", (e) => {
+                    if (e.target === document.getElementById("photoArea") || e.target === document.getElementById("mainImage")) {
+                        hideInfoPopup();
+                        clearSelection();
+                    }
+                });
+            };
+        }
+
+        function renderPeopleBoxes(image, person) {
+            console.log("Rendering person box:", person);
+            const overlay = document.getElementById("overlay");
+
+            const { id, startx, starty, width, height } = image;
+            if (startx === undefined || width === undefined) return;
+
+            const mainImage = document.getElementById("mainImage");
+            const scaleX = mainImage.offsetWidth / mainImage.naturalWidth;
+            const scaleY = mainImage.offsetHeight / mainImage.naturalHeight;
+
+            const box = document.createElement("div");
+            box.className = "face-box";
+            box.style.position = "absolute";
+            box.style.left = `${startx * scaleX}px`;
+            box.style.top = `${starty * scaleY}px`;
+            box.style.width = `${width * scaleX}px`;
+            box.style.height = `${height * scaleY}px`;
+            box.dataset.personId = person.id;
+
+            box.addEventListener("click", (e) => {
+                e.stopPropagation();
+                clearSelection();
+                box.classList.add("selected");
+                selectedPersonId = person.id;
+                showInfoPopup(person, startx * scaleX, starty * scaleY, height * scaleY);
+            });
+
+            overlay.appendChild(box);
+            currentBoxes.push(box);
+        }
+
+        function clearSelection() {
+            document.querySelectorAll(".face-box").forEach(box => {
+                box.classList.remove("selected");
+            });
+            selectedPersonId = null;
+        }
+
+        function showInfoPopup(person, x, y, boxHeight) {
+            const popup = document.getElementById("infoPopup");
+
+            popup.innerHTML = `
+                <div class="person-name">
+                    ${person.name}
+                    <span class="expand-icon" onclick="toggleExpandedInfo(this)">▼</span>
+                </div>
+                <div class="person-details">
+                    ${person.belong || "所属情報なし"}
+                </div>
+                <div class="expanded-info">
+                    <div><strong>所属:</strong> ${person.belong || "未設定"}</div>
+                    <div><strong>年齢:</strong> ${person.age || "未設定"}</div>
+                    <div><strong>生年月日:</strong> ${person.birth || "未設定"}</div>
+                    <div><strong>出身地:</strong> ${person.place || "未設定"}</div>
+                    <div><strong>趣味:</strong> ${person.hobby || "未設定"}</div>
+                    <div><strong>その他:</strong> ${person.other || "未設定"}</div>
+                    <div>
+                        <i class="bi bi-pencil-fill edit-icon" onclick="editPerson(${person.id})"></i>
+                    </div>
+                </div>
+            `;
+
+            // 画像コンテナの位置を取得
+            const imageContainer = document.getElementById("photoArea");
+            const containerRect = imageContainer.getBoundingClientRect();
+
+            // 顔の枠の下に表示するように位置を調整
+            popup.style.left = `${containerRect.left + x}px`;
+            popup.style.top = `${containerRect.top + y + boxHeight + 10}px`;
+            popup.style.display = "block";
+
+            // 画面外に出る場合の調整
+            const rect = popup.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                popup.style.left = `${containerRect.left + x - (rect.right - window.innerWidth) - 20}px`;
+            }
+            if (rect.bottom > window.innerHeight) {
+                popup.style.top = `${containerRect.top + y - popup.offsetHeight - 10}px`;
+            }
+        }
+
+        function hideInfoPopup() {
+            const popup = document.getElementById("infoPopup");
+            popup.style.display = "none";
+
+            // 展開されている詳細情報を閉じる
+            const expandedInfo = popup.querySelector('.expanded-info');
+            const expandIcon = popup.querySelector('.expand-icon');
+            if (expandedInfo) {
+                expandedInfo.style.display = "none";
+            }
+            if (expandIcon) {
+                expandIcon.textContent = "▼";
+            }
+        }
+
+        function toggleExpandedInfo(icon) {
+            const expandedInfo = icon.parentElement.parentElement.querySelector('.expanded-info');
+            if (expandedInfo.style.display === "none" || expandedInfo.style.display === "") {
+                expandedInfo.style.display = "block";
+                icon.textContent = "▲";
+            } else {
+                expandedInfo.style.display = "none";
+                icon.textContent = "▼";
+            }
+        }
+
+        function editPerson(personId) {
+            // 編集する人物のIDをセッションストレージに保存
+            sessionStorage.setItem("editPersonId", personId);
+            window.location.href = "person_edit.html";
+        }
+
+        function addEvent_editBtn(image) {
+            const editBtn = document.getElementById("edit-imageName");
+            let h2 = document.getElementById("imageName");
+
+            editBtn.addEventListener("click", () => {
+                const h2 = document.getElementById("imageName");
+                const currentText = h2.textContent;
+
+                // すでに input があるなら無視（多重置換防止）
+                if (h2.tagName === "INPUT") return;
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.value = currentText;
+                input.style.fontSize = "1.5em";
+                input.style.width = "100%";
+                input.id = "imageName"; // IDを維持して後から使えるように
+
+                h2.replaceWith(input);
+                input.focus();
+
+                const save = async () => {
+                    const newText = input.value.trim() || currentText;
+                    const newH2 = document.createElement("h2");
+                    newH2.id = "imageName";
+                    newH2.textContent = newText;
+                    input.replaceWith(newH2);
+
+                    image.name = newText;
+                    await editimagename(image);
+                    console.log("sccess1")
+
+                };
+
+                input.addEventListener("blur", save);
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") save();
+                });
+            });
+            const editHandler = () => editBtn.click();
+            editBtn.addEventListener("click", editHandler, { once: true });
+            document.getElementById("delete_Button").addEventListener("click", async () => {
+                if (confirm("この写真を削除しますか？")) {
+                    console.log(image)
+                    await deleteimage(image);
+                    console.log("end")
+                    alert("削除しました");
+                    window.location.href = "index.html";
+                }
+            });
+
+        }
+        async function deleteimage(image) {
+            console.log("enter")
+            let db = await openDB();
+            const tx = db.transaction("images", "readwrite");
+            const store = tx.objectStore("images");
+            store.delete(image.id);
+            
+            tx.onerror = () => {
+                alert("削除に失敗しました");
+            };
+            db = await openDB();
+            const tx_p = db.transaction("people", "readwrite");
+            tx_p.onerror = () => {
+                alert("削除に失敗しました");
+            };
+            const store_p = tx_p.objectStore("people");
+            const req = store_p.getAll();
+            req.onsuccess = () => {
+                console.log(req.result)
+                req.result.forEach(person => {
+                    // image.id を含んでいるかチェック
+                    console.log(person.imageids)
+                    person.imageids = person.imageids.filter(id => id !== image.id); // ★ 削除処理
+                    console.log(person.imageids)
+
+                    if (person.imageids.length === 0) {
+                        const deleteReq = store_p.delete(person.id);
+                        deleteReq.onerror = (e) => {
+                            console.error(`削除エラー: person.id = ${person.id}`, e.target.error);
+                        };
+                        deleteReq.onsuccess = () => {
+                            console.log(`person.id = ${person.id} を削除しました`);
+                        };
+                    } else {
+                        const putReq = store_p.put(person);
+                        putReq.onerror = (e) => {
+                            console.error(`保存エラー: person.id = ${person.id}`, e.target.error);
+                        };
+                        putReq.onsuccess = () => {
+                            console.log(`person.id = ${person.id} を更新しました`);
+                        };
+                    }
+                });
+            };
+
+            req.onerror = () => {
+                console.error("データ取得エラー", req.error);
+                reject("データ取得エラー");
+            };
+
+
+
+        }
+
+        function toggleFrameVisibility() {
+            const toggle = document.getElementById("toggleFrames");
+            const boxes = document.querySelectorAll(".face-box");
+
+            boxes.forEach(box => {
+                box.style.display = toggle.checked ? "block" : "none";
+            });
+        }
+
+        // イベントリスナーの設定
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.getElementById("toggleFrames");
+            toggle.addEventListener("change", toggleFrameVisibility);
+        });
+
+        // ページ外をクリックした時にポップアップを閉じる
+        document.addEventListener('click', function (e) {
+            const popup = document.getElementById("infoPopup");
+            const photoArea = document.getElementById("photoArea");
+
+            if (!popup.contains(e.target) && !photoArea.contains(e.target)) {
+                hideInfoPopup();
+                clearSelection();
+            }
+        });
+
+        loadData();
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+
+</body>
+
+</html>

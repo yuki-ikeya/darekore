@@ -1,0 +1,414 @@
+<!-- 人物の詳細情報を編集 -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>だれコレ</title>
+    <style>
+body {
+    font-family: sans-serif;
+    padding: 0px;
+    margin: 0px;
+    background-color: #f5f5f5;
+}
+
+.header {
+    text-align: center;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.content {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+input,
+textarea {
+    width: 100%;
+    font-size: 16px; /* 元は14px */
+    padding: 8px;
+    box-sizing: border-box;
+    background-color: #eaeaea;
+    border: none;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.record_button {
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    touch-action: manipulation;
+    background-color: #9ededd;
+    color: white;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.cancel_button {
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    touch-action: manipulation;
+    background-color: #f26b6b;
+    /* 赤っぽい */
+    color: white;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+
+#faceImage {
+    width: auto;
+    height: 15vh;
+    margin-bottom: 10px;
+    border-radius: 16px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 22px;
+    }
+}
+
+@media (hover: hover) {
+    .record_button:hover {
+        background-color: #79c6c5;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .cancel_button:hover {
+        background-color: #d9534f;
+        /* ホバー時に少し濃く */
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+}
+
+.record_button:active {
+    background-color: #79c6c5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.cancel_button:active {
+    background-color: #d9534f;
+    /* ホバー時に少し濃く */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.dropdown-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dropdown-label select {
+    font-size: 16px;
+    padding: 4px;
+}
+
+.dropdown-label span {
+    font-size: 16px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    /* ボタン間の間隔 */
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>人物の詳細情報</h1>
+    </div>
+
+    <div class="content">
+        <img id="faceImage" />
+
+        <div class="form-group"><label>名前</label><input id="name" type="text"></div>
+        <div class="form-group"><label>所属</label><input id="belong" type="text"></div>
+        <div class="form-group"><label>年齢</label><input id="age" type="text"></div>
+
+        <div class="form-group">
+            <label>誕生日</label>
+            <div style="display: flex; gap: 20px;">
+                <div class="dropdown-label">
+                    <select id="birthMonth"></select>
+                    <span>月</span>
+                </div>
+                <div class="dropdown-label">
+                    <select id="birthDay"></select>
+                    <span>日</span>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+        <div class="form-group"><label>出身地</label><input id="place" type="text"></div>
+        <div class="form-group"><label>趣味</label><input id="hobby" type="text"></div>
+        <div class="form-group"><label>その他</label><textarea id="other" type="text"></textarea></div>
+
+        <div class="button-container">
+            <button id="record_Button" class="record_button">保存</button>
+            <button id="cancel_Button" class="cancel_button">キャンセル</button>
+          </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+
+    <script>
+
+        ///月、日のオプションを追加するコード----
+        const monthSelect = document.getElementById("birthMonth");
+        const daySelect = document.getElementById("birthDay");
+        const placeholderMonth = document.createElement("option");
+        placeholderMonth.value = "";
+        placeholderMonth.textContent = "-";
+        monthSelect.appendChild(placeholderMonth);
+
+        for (let i = 1; i <= 12; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+            monthSelect.appendChild(option);
+        }
+
+        // 日セレクト（先頭に "-" を追加）
+        const placeholderDay = document.createElement("option");
+        placeholderDay.value = "";
+        placeholderDay.textContent = "-";
+        daySelect.appendChild(placeholderDay);
+
+        for (let i = 1; i <= 31; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+            daySelect.appendChild(option);
+        }
+
+        ///----月、日のオプションを追加するコード
+        function setBirth(birthStr) {
+            const monthSelect = document.getElementById("birthMonth");
+            const daySelect = document.getElementById("birthDay");
+
+            if (!birthStr || birthStr === "----") {
+                // 未入力時
+                monthSelect.value = "";
+                daySelect.value = "";
+                return;
+            }
+
+            if (birthStr.length === 4) {
+                const month = parseInt(birthStr.slice(0, 2), 10);
+                const day = parseInt(birthStr.slice(2, 4), 10);
+
+                if (!isNaN(month) && !isNaN(day)) {
+                    monthSelect.value = month;
+                    daySelect.value = day;
+                }
+            }
+        }
+        function getBirthMMDD() {
+            const month = document.getElementById("birthMonth").value;
+            const day = document.getElementById("birthDay").value;
+
+            // どちらかが未選択なら "----" にする
+            if (!month || !day) return "----";
+
+            const mm = String(month).padStart(2, '0');
+            const dd = String(day).padStart(2, '0');
+
+            return mm + dd;
+        }
+
+
+
+        const dbName = "GalleryDB";
+        const peopleStore = "people";
+        const storeName = "images";
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+
+
+
+
+        async function loadPersonData(id) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(peopleStore, "readonly");
+                const store = tx.objectStore(peopleStore);
+                const req = store.get(Number(id));
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject("データ取得エラー");
+            });
+        }
+
+        async function showPerson() {
+            const personId = sessionStorage.getItem("editPersonId");
+            if (!personId) {
+                alert("人物IDが見つかりません");
+                return;
+            }
+
+            try {
+                const person = await loadPersonData(personId);
+
+                if (!person) {
+                    alert("指定された人物データが見つかりません");
+                    return;
+                }
+                console.log(person.img)
+                document.getElementById("name").value = person.name || "";
+                document.getElementById("belong").value = person.belong || "";
+                document.getElementById("age").value = person.age ?? "";
+                setBirth(person.birth);
+                document.getElementById("place").value = person.place || "";
+                document.getElementById("hobby").value = person.hobby || "";
+                document.getElementById("other").value = person.other || "";
+
+                const faceImage = document.getElementById("faceImage");
+                if (person.img) {
+                    faceImage.src = person.img;
+                    faceImage.style.display = "block";
+                }
+                document.getElementById("record_Button").addEventListener("click", async () => {
+                    const edited_person = {
+                        id: person.id,
+                        name: document.getElementById("name").value.trim(),
+                        belong: document.getElementById("belong").value.trim(),
+                        age: parseInt(document.getElementById("age").value) || null,
+                        birth: getBirthMMDD(),
+                        place: document.getElementById("place").value.trim(),
+                        hobby: document.getElementById("hobby").value.trim(),
+                        other: document.getElementById("other").value.trim(),
+                        img: person.img,
+                        imageids: person.imageids
+                    };
+                    await changePersonData(edited_person);
+
+                    sessionStorage.setItem("editPersonId", person.id);  // 再保存してもOK
+                    window.location.href = "person.html";
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert("データの読み込みに失敗しました");
+            }
+        }
+
+        async function changePersonData(person) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                console.log("enter1")
+                const tx = db.transaction(peopleStore, "readwrite");
+                console.log("enter2")
+                const store = tx.objectStore(peopleStore);
+                console.log("enter3")
+                const req = store.put(person);
+                console.log("save_1", req)
+                req.onsuccess = () => resolve(req.result);  // ← 自動生成されたidを返す
+                console.log("false")
+                req.onerror = () => reject(req.error);
+            });
+        }
+        async function delete_person(id) {
+            const db = await openDB();
+            const tx = db.transaction("people", "readwrite");
+            const store = tx.objectStore("people");
+            store.delete(id);
+            tx.oncomplete = () => {
+                alert("削除しました");
+                window.location.href = "people.html";  // 必要に応じて遷移先を調整
+            };
+            tx.onerror = () => {
+                alert("削除に失敗しました");
+            };
+        }
+
+
+
+        document.getElementById("cancel_Button").addEventListener("click", () => {
+
+            window.location.href = "person.html";
+        });
+
+
+        showPerson();
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>

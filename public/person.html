@@ -1,0 +1,455 @@
+<!-- 人物の詳細情報 -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>だれコレ</title>
+  <style>
+    body {
+  font-family: sans-serif;
+  padding: 0px;
+  margin: 0px;
+  background-color: #f5f5f5;
+}
+
+.header {
+  text-align: center;
+  background-color: white;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+  z-index: 1;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  font-size: 20px;
+  padding: 4px 12px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  color: #333;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.spacer {
+  width: 40px;
+  /* ボタンとバランスを取るためのダミー要素 */
+  position: absolute;
+  right: 0;
+}
+
+@media (max-width: 600px) {
+  .header h1 {
+    font-size: 20px;
+  }
+}
+
+.content {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+input,
+textarea {
+  width: 100%;
+  font-size: 16px; /* 元は14px */
+  padding: 8px;
+  box-sizing: border-box;
+  background-color: #eaeaea;
+  border: none;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.button {
+  padding: 10px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  touch-action: manipulation;
+  background-color: #9ededd;
+  color: white;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.button:active {
+  background-color: #79c6c5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+#faceImage {
+  width: auto;
+  height: 15vh;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 22px;
+  }
+}
+
+.button_delete {
+  padding: 10px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  touch-action: manipulation;
+  background-color: #f26b6b;
+  /* 赤っぽい */
+  color: white;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.button_delete:active {
+  background-color: #d9534f;
+  /* ホバー時に少し濃く */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.image-grid img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  /* ボタン間の間隔 */
+  margin-top: 20px;
+}
+
+/* ホバー対応メディアでのみホバーが起こるようにする */
+@media (hover: hover) {
+  .back-button:hover {
+    background-color: #ddd;
+  }
+
+  .button:hover {
+    background-color: #79c6c5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .button_delete:hover {
+    background-color: #d9534f;
+    /* ホバー時に少し濃く */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+}
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-inner">
+      <button id="backButton" class="back-button">←</button>
+      <h1>人物の詳細情報</h1>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+
+  <div class="content">
+    <img id="faceImage" />
+    <div class="form-group"><label>名前</label><input id="name" readonly></div>
+    <div class="form-group"><label>所属</label><input id="belong" readonly></div>
+    <div class="form-group"><label>年齢</label><input id="age" readonly></div>
+    <div class="form-group"><label>生年月日</label><input id="birth" readonly></div>
+    <div class="form-group"><label>出身地</label><input id="place" readonly></div>
+    <div class="form-group"><label>趣味</label><input id="hobby" readonly></div>
+    <div class="form-group"><label>その他</label><textarea id="other" readonly></textarea></div>
+    <div class="form-group">
+      <label>関連画像</label>
+      <div class="image-grid" id="imageGallery">
+      </div>
+    </div>
+    <div class="button-container">
+      <button id="editButton" class="button">編集</button>
+      <button id="delete_Button" class="button_delete">削除</button>
+    </div>
+
+  </div>
+  <div id="confirmOverlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div
+      style="background: white; padding: 20px; border-radius: 12px; text-align: center; width: 300px; margin: 20vh auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+      <p style="font-weight: bold; margin-bottom: 20px;">本当に削除しますか？</p>
+      <button id="confirmYes" class="button_delete" style="margin: 0 10px;">はい</button>
+      <button id="confirmNo" class="button" style="margin: 0 10px;">いいえ</button>
+    </div>
+  </div>
+
+
+
+  <script>
+    const dbName = "GalleryDB";
+    const peopleStore = "people";
+    const storeName = "images";
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("darekoreDB", 10);
+
+        request.onupgradeneeded = e => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains("images")) {
+            db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+          }
+          if (!db.objectStoreNames.contains("people")) {
+            db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject("DB open error");
+        request.onblocked = () => {
+          alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+        };
+      });
+    }
+
+
+
+
+    async function loadPersonData(id) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(peopleStore, "readonly");
+        const store = tx.objectStore(peopleStore);
+        const req = store.get(Number(id));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject("データ取得エラー");
+      });
+    }
+
+    async function loadRelatedImages(personId) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("images", "readonly");
+        const store = tx.objectStore("images");
+        const req = store.getAll();
+
+        req.onsuccess = () => {
+          const images = req.result;
+          const relatedImages = images.filter(image => {
+            if (!Array.isArray(image.people)) return false;
+            return image.people.some(p => p.id === personId);
+          });
+
+          resolve(relatedImages);
+        };
+
+        req.onerror = () => reject("画像データ取得エラー");
+      });
+    }
+
+
+    document.getElementById("backButton").addEventListener("click", () => {
+      window.location.href = "people.html";
+    });
+
+    function setBirth(birthStr) {
+      const monthSelect = document.getElementById("birthMonth");
+      const daySelect = document.getElementById("birthDay");
+
+      if (!birthStr || birthStr === "----") {
+        // 未入力時
+        return "";
+      }
+
+      if (birthStr.length === 4) {
+        const month = parseInt(birthStr.slice(0, 2), 10);
+        const day = parseInt(birthStr.slice(2, 4), 10);
+
+        if (!isNaN(month) && !isNaN(day)) {
+          return `${month}月${day}日`;
+        }
+      }
+      return "";
+    }
+
+    async function showPerson() {
+      const personId = sessionStorage.getItem("editPersonId");
+      if (!personId) {
+        alert("人物IDが見つかりません");
+        return;
+      }
+
+      try {
+        const person = await loadPersonData(personId);
+
+        if (!person) {
+          alert("指定された人物データが見つかりません");
+          return;
+        }
+
+        sessionStorage.setItem("editPersonId", person.id); // ← この行を追加
+
+        document.getElementById("name").value = person.name || "";
+        document.getElementById("belong").value = person.belong || "";
+        document.getElementById("age").value = person.age ?? "";
+        document.getElementById("birth").value = setBirth(person.birth);
+        document.getElementById("place").value = person.place || "";
+        document.getElementById("hobby").value = person.hobby || "";
+        document.getElementById("other").value = person.other || "";
+        let related_images = await loadRelatedImages(person.id);
+
+        const gallery = document.getElementById("imageGallery");
+        related_images.forEach(image => {
+          const img = document.createElement("img");
+          img.src = image.image;
+          img.alt = "関連画像";
+          img.style.cursor = "pointer";
+
+
+          img.addEventListener("click", () => {
+            console.log("画像ID:", image.id);
+            //const imageIdStr = sessionStorage.getItem("imageID_toshow");
+            sessionStorage.setItem("imageID", image.id);
+            window.location.href = "screen6.html";
+          });
+
+          gallery.appendChild(img);
+        });
+
+        const faceImage = document.getElementById("faceImage");
+        if (person.img) {
+          faceImage.src = person.img;
+          faceImage.style.display = "block";
+        }
+
+        document.getElementById("editButton").addEventListener("click", () => {
+          sessionStorage.setItem("editPersonId", person.id);  // 再保存してもOK
+          window.location.href = "person_edit.html";
+        });
+
+
+        document.getElementById("delete_Button").addEventListener("click", () => {
+          document.getElementById("confirmOverlay").style.display = "block";
+        });
+
+        document.getElementById("confirmYes").addEventListener("click", async () => {
+          const personId = Number(sessionStorage.getItem("editPersonId"));
+          if (personId) {
+            await delete_person(personId);
+          }
+          document.getElementById("confirmOverlay").style.display = "none";
+        });
+
+        document.getElementById("confirmNo").addEventListener("click", () => {
+          document.getElementById("confirmOverlay").style.display = "none";
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert("データの読み込みに失敗しました");
+      }
+    }
+    async function delete_person(id) {
+      const db = await openDB();
+      const people_tx = db.transaction("people", "readwrite");
+      const people_store = people_tx.objectStore("people");
+      people_store.delete(id);
+
+      people_tx.oncomplete = () => {
+        const images_tx = db.transaction("images", "readwrite");
+        const images_store = images_tx.objectStore("images");
+
+        const req = images_store.getAll();  // ← get() → getAll() に修正
+        req.onsuccess = () => {
+          console.log(req.result)
+          req.result.forEach(image => {
+            if (!Array.isArray(image.people)) return;
+
+            // 該当人物が含まれているかチェック
+            const originalLength = image.people.length;
+            image.people = image.people.filter(person => person.id !== id);
+            console.log(image.people)
+            // 削除が発生した場合のみ更新
+            if (image.people.length !== originalLength) {
+              images_store.put(image);  // image.id をキーに更新
+            }
+          });
+        };
+        alert("削除しました");
+        // 表示の遷移は画像更新が非同期でも問題ないならそのままでOK
+        window.location.href = "people.html";
+      };
+
+      people_tx.onerror = () => {
+        alert("削除に失敗しました");
+      };
+    }
+
+    showPerson();
+  </script>
+
+  <!-- Service Workerの登録 -->
+  <script>
+      if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+              navigator.serviceWorker.register('sw.js').then(function (registration) {
+                  console.log('ServiceWorker 登録成功:', registration.scope);
+              }).catch(function (error) {
+                  console.log('ServiceWorker 登録失敗:', error);
+              });
+          });
+      }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,222 @@
+<!-- 画像詳細入力 -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>だれコレ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 40px;
+        }
+
+        #preview {
+            max-width: 80%;
+            border-radius: 12px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .info-box {
+            font-size: 16px;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        #takenDateInput,
+        #eventNameInput {
+            font-size: 16px;
+            padding: 5px;
+            border: none;
+            background: transparent;
+            outline: none;
+            text-align: center;
+        }
+
+        /* main-button スタイルをここに追加 */
+        .main-button {
+            padding: 18px 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            width: 75%;
+            /* 幅を調整 */
+            max-width: 400px;
+            /* 最大幅を調整 */
+            margin: 0 auto;
+            /* 中央寄せ */
+            display: block;
+            /* ブロック要素にして中央寄せを有効に */
+        }
+
+        #uploadBtn {
+            /* 既存のスタイルを削除または上書き */
+            background-color: #9ededd;
+            color: white;
+        }
+
+        @media (hover: hover) {
+            #uploadBtn:hover {
+                background-color: #79c6c5;
+            }
+        }
+
+        #preview,
+        #dateBox,
+        #eventBox,
+        #uploadBtn {
+            display: none;
+        }
+
+        /* メディアクエリもscreen3.htmlに合わせて調整 */
+        @media (max-width: 768px) {
+            .main-button {
+                padding: 10px 30px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <img id="preview" src="" alt="画像プレビュー" />
+    <br>
+
+    <div id="dateBox" class="info-box">
+        撮影日：<input type="date" id="takenDateInput" />
+    </div>
+    <br>
+
+    <div id="eventBox" class="info-box">タイトル：<input type="text" id="eventNameInput" placeholder="画像タイトル" /></div>
+    <br>
+
+    <button id="uploadBtn" class="main-button">アップロード</button>
+
+    <script>
+        const preview = document.getElementById('preview');
+        const dateBox = document.getElementById('dateBox');
+        const eventBox = document.getElementById('eventBox');
+        const dateInput = document.getElementById('takenDateInput');
+        const nameInput = document.getElementById('eventNameInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        const imageData = sessionStorage.getItem("uploadedImage");
+        const originalName = sessionStorage.getItem("originalName");
+        const fileDate = sessionStorage.getItem("fileLastModified");
+        const exifDate = sessionStorage.getItem("exifDate");  //撮影日
+
+        if (imageData) {
+            preview.src = imageData;
+            preview.style.display = 'block';
+            dateBox.style.display = 'inline-block';
+            eventBox.style.display = 'inline-block';
+            uploadBtn.style.display = 'inline-block';
+
+            if (exifDate && exifDate !== "") {
+                dateInput.value = exifDate;
+            } else if (fileDate) {
+                const date = new Date(fileDate);
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+
+            // 初期日付：今日
+            /*
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+            */
+
+        } else {
+            document.body.innerHTML = "<p>画像データが見つかりませんでした。</p>";
+        }
+
+        let isUploading = false;
+
+        uploadBtn.addEventListener('click', async () => {
+            if (isUploading) return; // 二重実行防止
+            isUploading = true;
+
+            const db = await openDB();
+            const tx = db.transaction("images", "readwrite");
+            const store = tx.objectStore("images");
+            let imageName = nameInput.value.trim();
+            const newItem = {
+                image: imageData,
+                name: imageName,
+                date: new Date(dateInput.value).toISOString(),
+                people: []
+            };
+            sessionStorage.setItem("eventName", imageName);
+            const req = store.add(newItem);
+
+            req.onsuccess = () => {
+                const insertedId = req.result;
+                console.log("登録されたID:", insertedId);
+                sessionStorage.setItem("imageID", insertedId);
+                window.location.href = "screen3.html";
+            };
+            req.onerror = () => {
+                alert("保存に失敗しました。");
+                isUploading = false; // エラー時はロック解除
+            };
+        });
+
+
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("darekoreDB", 10);
+
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("images")) {
+                        db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains("people")) {
+                        db.createObjectStore("people", { keyPath: "id", autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject("DB open error");
+                request.onblocked = () => {
+                    alert("⚠ 他のタブやページがデータベースを使用中です。\nすべて閉じてから再度お試しください。");
+                };
+            });
+        }
+    </script>
+
+    <!-- Service Workerの登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker 登録成功:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker 登録失敗:', error);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
