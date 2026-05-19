@@ -4,7 +4,7 @@ __ハッカソン__（Open Hack U 2025 TOKYO）にて開発したチームプロ
 https://hacku.yahoo.co.jp/hacku2025_tokyo/<br>
 <br>
 
-__Demo__<br>
+__デモ__<br>
 https://darekore-ocha.web.app<br>
 <br>
 
@@ -13,7 +13,7 @@ __概要__<br>
 （※ここは内容に合わせて少し変えてもOK）<br>
 <br>
 
-__My Role（担当・役割）__<br>
+__担当・役割__<br>
 本プロジェクトはハッカソンにてチームで開発しました。  
 私は主に以下を担当しました：
 
@@ -29,15 +29,15 @@ __My Role（担当・役割）__<br>
 直感的に操作できるインタフェースの実装に取り組みました。<br>
 <br>
 
-__Presentation__<br>
+__プレゼンテーション__<br>
 [darekore_presentation.pdf](https://github.com/user-attachments/files/20936905/darekore_presentation.pdf)<br>
 <br>
 
-__Technologies__<br>
+__技術説明__<br>
 [darekore_technologies.pdf](https://github.com/user-attachments/files/20936903/darekore_technologies.pdf)<br>
 <br>
 
-__Team__ <br>
+__共同開発者__ <br>
 [@RikakoAraki](https://github.com/RikakoAraki)  
 [@Mst512](https://github.com/Mst512)  
 [@haruka-tomiyama](https://github.com/haruka-tomiyama)  
