@@ -4,16 +4,16 @@
 https://hacku.yahoo.co.jp/hacku2025_tokyo/
 
 
-__Demo__
+__Demo__<br>
 https://darekore-ocha.web.app
 
 
-__概要__
+__概要__<br>
 ユーザが「誰か」を特定・共有することを目的としたWebアプリケーションです。  
 （※ここは内容に合わせて少し変えてもOK）
 
 
-__My Role（担当・役割）__
+__My Role（担当・役割）__<br>
 本プロジェクトはハッカソンにてチームで開発しました。  
 私は主に以下を担当しました：
 
@@ -29,11 +29,11 @@ __My Role（担当・役割）__
 直感的に操作できるインタフェースの実装に取り組みました。
 
 
-__Presentation__
+__Presentation__<br>
 [darekore_presentation.pdf](https://github.com/user-attachments/files/20936905/darekore_presentation.pdf)
 
 
-__Technologies__
+__Technologies__<br>
 [darekore_technologies.pdf](https://github.com/user-attachments/files/20936903/darekore_technologies.pdf)
 
 
