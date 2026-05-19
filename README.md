@@ -31,11 +31,11 @@ https://darekore-ocha.web.app
 
 
 ## Presentation
-darekore_presentation.pdf
+public/darekore_presentation.pdf
 
 
 ## Technologies
-darekore_technologies.pdf
+public/darekore_technologies.pdf
 
 
 ## Team
