@@ -14,7 +14,7 @@ https://darekore-ocha.web.app
 
 
 ## My Role（担当・役割）
-
+__デプロイ済み__ 
 本プロジェクトはハッカソンにてチームで開発しました。  
 私は主に以下を担当しました：
 
@@ -31,11 +31,11 @@ https://darekore-ocha.web.app
 
 
 ## Presentation
-public/darekore_presentation.pdf
+[darekore_presentation.pdf](https://github.com/user-attachments/files/20936905/darekore_presentation.pdf)
 
 
 ## Technologies
-public/darekore_technologies.pdf
+[darekore_technologies.pdf](https://github.com/user-attachments/files/20936903/darekore_technologies.pdf)
 
 
 ## Team
