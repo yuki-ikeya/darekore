@@ -1,14 +1,13 @@
 # だれコレ
 
-<p>__ハッカソン__（Open Hack U 2025 TOKYO）にて開発したチームプロジェクトです。  
+__ハッカソン__（Open Hack U 2025 TOKYO）にて開発したチームプロジェクトです。  
 https://hacku.yahoo.co.jp/hacku2025_tokyo/<br>
 <br>
-</p>
 
-<p>__Demo__<br>
+__Demo__<br>
 https://darekore-ocha.web.app
 <br>
-</p>
+
 __概要__<br>
 ユーザが「誰か」を特定・共有することを目的としたWebアプリケーションです。  
 （※ここは内容に合わせて少し変えてもOK）
